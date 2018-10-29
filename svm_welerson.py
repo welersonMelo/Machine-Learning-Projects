@@ -1,17 +1,13 @@
 #!/usr/bin/python
 
-#Project Author: Welerson Melo
-
 """ 
-    This is the code to accompany the Lesson 1 (Naive Bayes) mini-project. 
+    This is the code to accompany the Lesson 2 (SVM) mini-project.
 
-    Use a Naive Bayes Classifier to identify emails by their authors
-    
-    authors and labels: 
+    Use a SVM to identify emails from the Enron corpus by their authors:    
     Sara has label 0
     Chris has label 1
 """
-
+    
 import sys
 from time import time
 sys.path.append("../tools/")
@@ -25,12 +21,13 @@ features_train, features_test, labels_train, labels_test = preprocess()
 
 
 #########################################################
+### your code goes here ###
 
 import numpy as np 
-from sklearn.naive_bayes import GaussianNB
+from sklearn import svm
 from sklearn.metrics import accuracy_score
 
-clf = GaussianNB()
+clf = svm.SVC(C = 10000.0, kernel = "rbf")
 
 t0 = time()
 
@@ -42,10 +39,20 @@ t0 = time()
 
 labels_predict = clf.predict(features_test)
 
+cont = 0
+for c in labels_predict:
+	if c == 1:
+		cont = cont + 1
+
+print "Quant emails de cris: ", cont
+
 print("tempo de previsao:", round(time()-t0), "s")
 
 accuracy_value = accuracy_score(labels_test, labels_predict)
 
 print(accuracy_value)
 
+
 #########################################################
+
+
