@@ -1,3 +1,4 @@
+# para rodar faça: python3 harrisCornerSeq.py imagemName.extensao
 import numpy as np
 import math
 import imgLib 
