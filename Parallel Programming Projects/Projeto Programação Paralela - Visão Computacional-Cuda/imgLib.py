@@ -2,13 +2,12 @@ import numpy as np
 import math
 import baselib
 
+'''
 from pycuda import driver, compiler, tools
-
 import pycuda.autoinit
-
 import pycuda.gpuarray as gpuarray
-
 from pycuda.reduction import ReductionKernel
+'''
 
 ################################################################
 def calcResponse(Ix2, Iy2, Ixy, h, w):
@@ -100,6 +99,7 @@ def nonMaxima(img):
 		
 	return keyPoints
 
+'''
 
 def convolveGPU(img, kernel):
 	
@@ -145,5 +145,4 @@ def convolveGPU(img, kernel):
 	
 	return c_gpu.get()
 	
-	
-
+'''
