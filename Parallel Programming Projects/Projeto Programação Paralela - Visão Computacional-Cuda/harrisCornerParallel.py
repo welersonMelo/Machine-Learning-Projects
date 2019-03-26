@@ -4,6 +4,8 @@ import imgLib
 import sys
 import baselib
 import matplotlib
+from multiprocessing import Process, Queue
+from concurrent.futures import ProcessPoolExecutor
 
 #################### MAIN #################################
 fileName = sys.argv[1]
@@ -15,16 +17,14 @@ h, w = baselib.size(imgG)
 
 #Gerando Gaussian mask 3X3
 g3Mask = imgLib.gaussianMaskGenerator()
-
-###Gaussian Convolution CUDA###
-imgG = imgLib.convolveGPU(imgG, g3Mask)
-
 ###SobelMask 5X5 ###
 s5MaskX = imgLib.sobelMaskGenerator()
 
 #### Aplicando Sobel Operator a partir da convolução ####
-Ix = imgLib.convolveGPU(imgG, s5MaskX)
-Iy = imgLib.convolveGPU(imgG, np.transpose(s5MaskX))
+#Ix = imgLib.convolveGPU(imgG, s5MaskX)
+#Iy = imgLib.convolveGPU(imgG, np.transpose(s5MaskX))
+Ix = imgLib.convolve(imgG, s5MaskX)
+Iy = imgLib.convolve(imgG, np.transpose(s5MaskX))
 
 #cv.imwrite('response Iy.png', Iy)
 #cv.imwrite('response Ix.png', Ix)
@@ -36,11 +36,14 @@ Ixy = np.multiply(Ix,Iy)
 
 
 #### LEMBRETE: TENTAR COLOCAR ESSAS TRES LINHAS PARA RODAR EM PARALELO E VER SE TEM ERRO NA GPU DE ACESSO AS POSICOes
-Ix2 = imgLib.convolveGPU(Ix2, g3Mask)
-Iy2 = imgLib.convolveGPU(Iy2, g3Mask)
-Ixy = imgLib.convolveGPU(Ixy, g3Mask)
+#Ix2 = imgLib.convolveGPU(Ix2, g3Mask)
+#Iy2 = imgLib.convolveGPU(Iy2, g3Mask)
+#Ixy = imgLib.convolveGPU(Ixy, g3Mask)
+Ix2 = imgLib.convolve(Ix2, g3Mask)
+Iy2 = imgLib.convolve(Iy2, g3Mask)
+Ixy = imgLib.convolve(Ixy, g3Mask)
 
-### response calc Paralelizar com CPU ###
+### response calc###
 response = imgLib.calcResponse(Ix2, Iy2, Ixy, h, w)
 
 ###normalizing###
@@ -48,9 +51,21 @@ response = imgLib.calcResponse(Ix2, Iy2, Ixy, h, w)
 rmax, rmin = response.max(), response.min()
 response = ((response - rmin)/(rmax-rmin)) * 1000
 
-###nonMaxima Paralelizar com CPU(talvez)###
-# Lista de keypoint sendo a uma tupla da posicao na imagem (i, j) onde i é a linha e j a coluna
-keyPointsList = imgLib.nonMaxima(response)
+###nonMaxima Paralelizado com processos CPU ###
+# Lista de keypoint sendo a uma tupla da posicao na imagem (i, j) onde i é a linha e j a coluna 
+nP = 4 #numero de processos
+workers = nP
+func = imgLib.nonMaxima
+args = response 
+
+with ProcessPoolExecutor(max_workers=workers) as executor:
+	res = executor.submit(func, args)
+
+keyPointsList = res.result()
+#keyPointsList = imgLib.nonMaxima(response)
+
+
+#######################################################################################
 
 ###put KeyPoints in the image###
 r = int(max(h, w)*0.015)
