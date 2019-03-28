@@ -2,12 +2,11 @@ import numpy as np
 import math
 import baselib
 
-'''
 from pycuda import driver, compiler, tools
 import pycuda.autoinit
 import pycuda.gpuarray as gpuarray
 from pycuda.reduction import ReductionKernel
-'''
+
 
 ################################################################
 def calcResponse(Ix2, Iy2, Ixy, h, w):
@@ -99,20 +98,20 @@ def nonMaxima(img):
 		
 	return keyPoints
 
-'''
-
 def convolveGPU(img, kernel):
 	
 	kernel_code_template = """
-	__global__ void matrixMult(float *img, float *B, float *C)
+	__global__ void convolution(float *img, float *B, float *C)
 	{
 		int a = 5, b = 5;
 		int a2 = a/2, b2 = b/2;
 		float g = 0;
-		int j = threadIdx.x;
-		int i = threadIdx.y;
+		int j = blockIdx.x * blockDim.x + threadIdx.x;
+		int i = blockIdx.y * blockDim.y + threadIdx.y;
 		int n = %(N)s, m =  %(M)s;
-		
+
+		if (i >= m || j >= n) return; 
+
 		for (int s = 0; s < a; s+=1){
 			for (int t = 0; t < b; t+=1) {
 				int x = j+t-a2;
@@ -132,17 +131,23 @@ def convolveGPU(img, kernel):
 	# Transferindo os arrays para o device.
 	img_gpu = gpuarray.to_gpu(np.asarray(img, np.float32)) 
 	b_gpu = gpuarray.to_gpu(np.asarray(kernel, np.float32))
-	c_gpu = gpuarray.empty(np.asarray(emp, np.float32))
+	c_gpu = gpuarray.to_gpu(np.asarray(emp, np.float32))
 
 	kernel_code = kernel_code_template % {
 		'N': n,
 		'M': m
+
 		}
 	mod = compiler.SourceModule(kernel_code)
-	convolution = mod.get_function("convolution")
+	convolution = mod.get_function("convolution")	
 	
-	matrixMult(img_gpu, b_gpu, c_gpu, block = (m, n, 1))
+	numBlocks = (int(max(m,n)/32) + 1)
+	BS = 32
+
+	convolution(img_gpu, b_gpu, c_gpu, block = (BS, BS, 1), grid = (numBlocks, numBlocks))
 	
-	return c_gpu.get()
+	aux = np.asarray(c_gpu.get(), np.float32)	
+
+	return aux
 	
-'''
+	

@@ -5,6 +5,9 @@ import imgLib
 import sys
 import baselib
 import matplotlib
+import time
+
+start = time.time()
 
 #################### MAIN #################################
 fileName = sys.argv[1]
@@ -40,6 +43,9 @@ Ix2 = imgLib.convolve(Ix2, g3Mask)
 Iy2 = imgLib.convolve(Iy2, g3Mask)
 Ixy = imgLib.convolve(Ixy, g3Mask)
 
+print('Tempo Parte inicial: ',time.time() - start)
+start = time.time()
+
 ### response calc ###
 response = imgLib.calcResponse(Ix2, Iy2, Ixy, h, w)
 
@@ -73,3 +79,5 @@ matplotlib.image.imsave(fileName+'Keypoints.png', img)
 with open('keyPoints'+fileName+'.txt', 'w') as f:
     for item in keyPointsList:
         f.write('('+str(item[0]) +', '+ str(item[1])+')'+ "\n")
+
+print('Tempo parte Final:',time.time() - start)
